@@ -3,7 +3,6 @@
 import warnings
 import numpy as np
 
-from astropy.extern import six
 from astropy.utils import misc
 from astropy.modeling import Model, polynomial
 from astropy.modeling.parameters import Parameter

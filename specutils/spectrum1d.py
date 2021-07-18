@@ -7,7 +7,7 @@ from specutils.models.Indexer import Indexer
 __all__ = ['Spectrum1D']
 
 import copy
-from astropy.extern import six
+#from astropy.extern import six
 from astropy import log
 from astropy.nddata import NDData
 
