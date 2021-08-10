@@ -135,7 +135,7 @@ def oplotlines(linelist=None,angstrom=False,color='k',xlim=None,ylim=None,
                         yval += cur_offset_val
                     else:
                         print('a', j, offset_ids)
-                    ax.text(totalLines[i]+deltaX+xoffset,yval ,totalNames[i],rotation=rotation,size=size,va='bottom',fontproperties=font1)
+                    ax.text(totalLines[i]+deltaX+xoffset,yval ,totalNames[i],rotation=rotation,size=size,va='bottom',fontproperties=font1,clip_on=True)
 
             else:
                 pl.plot([totalLines[i],totalLines[i]],ylim,color,linestyle=linestyle,alpha=alpha)
@@ -156,7 +156,7 @@ def oplotlines(linelist=None,angstrom=False,color='k',xlim=None,ylim=None,
                         yval += cur_offset_val
                         print(j, "adding offset", cur_offset_val, yval)
 
-                    pl.text(totalLines[i]+xoffset,yval,outstr,rotation=rotation,color=outcolor,size=size,va='bottom', horizontalalignment='center', bbox=dict(facecolor='none', edgecolor='none'))
+                    pl.text(totalLines[i]+xoffset,yval,outstr,rotation=rotation,color=outcolor,size=size,va='bottom', horizontalalignment='center', bbox=dict(facecolor='none', edgecolor='none'),clip_on=True)
             j+=1
 
 def extract_lines(earlytype=False,linelist=None,arcturus=False,molecules=True,
