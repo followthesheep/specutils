@@ -507,7 +507,7 @@ def clip_spectrum(wave,flux,window_len=5,niter=3,sigma=3):
         smoothed = smoothed[window_len-1:-window_len+1]
         smoothed = smoothed/np.median(smoothed)
         diff = smoothed-x
-        good = np.where(np.abs(diff) < 3*np.std(diff))[0]
+        good = np.where(np.abs(diff) < sigma*np.std(diff))[0]
         x = x[good]
         wavelength = wavelength[good]
 
