@@ -11,7 +11,7 @@ def read_fits_file(filename, flux_units = 'erg / (cm^2 s Angstrom)',
                    desired_wavelength_units = 'micron',
                    wave_range=None,clip_oh = False,clip_pix = 2,
                    clip_lines=False,sigma_clip=False,
-                   clip_replace=False,
+                   clip_replace=False,jwst_nirspec=False,
                    window_len=5,niter=2,sigma=3,stellarlines=None,
                    stellarclip=None,uncertainty=None):
     '''
@@ -26,19 +26,31 @@ def read_fits_file(filename, flux_units = 'erg / (cm^2 s Angstrom)',
                    replace them with NaNs (useful for plotting) Default: False
     uncertainty - fits file containing the uncertainties for each flux value
     '''
-    flux = fits.getdata(filename)
+
+    if jwst_nirspec:
+        hdu = fits.open(filename)
+        # take out the units
+        wavelength = hdu[1].data['wavelength']
+        flux = hdu[1].data['flux']
+    else:
+        flux = fits.getdata(filename)
 
 
-    header = fits.getheader(filename)
+        header = fits.getheader(filename)
 
-    start_wavelength = header['CRVAL1'] #http://localhost:8888/notebooks/Metallicity%20Analysis.ipynb#
-    number_of_bins = header['NAXIS1']
-    bin_size = header['CDELT1']
-    end_wavelength = start_wavelength + (number_of_bins - 1) * bin_size
+        start_wavelength = header['CRVAL1'] #http://localhost:8888/notebooks/Metallicity%20Analysis.ipynb#
+        number_of_bins = header['NAXIS1']
+        bin_size = header['CDELT1']
+        end_wavelength = start_wavelength + (number_of_bins - 1) * bin_size
 
-    wavelength = np.linspace(start_wavelength, end_wavelength, number_of_bins)
+        wavelength = np.linspace(start_wavelength, end_wavelength, number_of_bins)
 
     if sigma_clip:
+        # remove the nan pixels first
+        good = np.where(~(np.isnan(flux)))[0]
+        wavelength = wavelength[good]
+        flux = flux[good]
+        
         # clip bad pixels
         wavelength, flux = clip_spectrum(wavelength, flux,window_len=window_len,niter=niter,sigma=sigma)
 
