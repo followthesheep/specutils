@@ -25,6 +25,9 @@ def read_fits_file(filename, flux_units = 'erg / (cm^2 s Angstrom)',
     clip_replace - instead of removing the indicies with OH lines,
                    replace them with NaNs (useful for plotting) Default: False
     uncertainty - fits file containing the uncertainties for each flux value
+    jwst_nirspec - read in a fits table of JWST NIRSPEC IFU data (default:False)
+    sigma_clip - clip outliers in the spectra using sigma clipping (default: False)
+    sigma - the sigma level to do the clipping (default: 3)
     '''
 
     if jwst_nirspec:
@@ -142,7 +145,17 @@ def read_fits_file(filename, flux_units = 'erg / (cm^2 s Angstrom)',
     else:
         return Spectrum1D.from_array(wavelength, flux,uncertainty = rms)
 
-
+def test_read_jwst_nirspec_fits():
+    '''
+    Test reading and clipping JWST NIRSPEC IFU spectra
+    '''
+    filename = '/data3/jwst/dr1/nirspec/gc_central/01_individual_spectra/2023_03_28_dl2023_03_29_v8/S0-2_2023_03_28_emsm_circle_median_std.fits'
+    s = read_fits_file(filename,jwst_nirspec=True,sigma_clip=True,niter=10,sigma=3)
+    plt.clf()
+    plt.plot(s.wavelength,s.flux)
+    plt.xlabel('Wavelength (micron)')
+    plt.ylabel('Flux')
+    
 
 def read_txt_file(filename, flux_units = 'erg / (cm^2 s Angstrom)',
                    wavelength_units = 'Angstrom',
