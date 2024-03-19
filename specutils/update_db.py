@@ -33,7 +33,7 @@ def update_starkit_db(name,date,ddate,mjd,h5file,snr=None,
     try:
         import MySQLdb as mdb
     except:
-        import pymysql as mdb
+        import mysql as mdb
 
     if starkit_stacked_spectra:
         table_name = 'starkit_stacked_spectra'

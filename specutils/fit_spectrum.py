@@ -10,7 +10,7 @@ from starkit import assemble_model, operations
 from starkit.fitkit import priors
 from starkit.base.operations.spectrograph import (Interpolate, Normalize,
                                                   NormalizeParts,InstrumentConvolveGrating)
-from starkit.base.operations.stellar import (RotationalBroadening, DopplerShift)
+from starkit.base.operations.stellar import (RotationalBroadening, DopplerShift, RadialVelocity)
 from specutils import read_fits_file,plotlines
 import numpy as np
 import os,scipy
@@ -33,11 +33,33 @@ def save_spectrum(wave,flux,filename):
 def fit(input_file,spectrum=None,teff_prior=[10000.0,35000.0],logg_prior=[2.0,5.0],mh_prior = [-1.0,0.8],
        alpha_prior = [-0.25,0.5],vrot_prior=[0,350.0],vrad_prior=[-5000,5000],R_prior=4000.0,
         wave_range=None,outdir='./',snr=30.0,norm_order=2,g=None,molecfit=False,wavelength_units='micron',
-        debug=False,**kwargs):
+        debug=False,radial_velocity=True,**kwargs):
     '''
     Given a fits file, read in and fit the spectrum using a grid
     
-    Passes keyword arguements into read_fits_file using **kwargs
+    Keywords
+    input_file: str - name of the fits file to fit
+    spectrum: Spectrum1D - if not None, use this spectrum instead of reading in the file
+    teff_prior: list - prior for effective temperature, default=[10000.0,35000.0]
+    logg_prior: list - prior for logg, default=[2.0,5.0]
+    mh_prior: list - prior for metallicity, default=[-1.0,0.8]
+    alpha_prior: list - prior for alpha, default=[-0.25,0.5]
+    vrot_prior: list - prior for rotational velocity, default=[0,350.0]
+    vrad_prior: list - prior for radial velocity, default=[-5000,5000]
+    R_prior: float - prior for resolution, default=4000.0
+    wave_range: list - wavelength range to fit, default=None
+    outdir: str - directory to save output files, default='./'
+    snr: float - signal to noise ratio, default=30.0
+    norm_order: int - order of the polynomial to use for normalization, default=2
+    g: grid - grid object, default=None
+    molecfit: bool - if True, use molecfit to read in the spectrum, default=False
+    wavelength_units: str - units of the wavelength, default='micron'
+    debug: bool - if True, print out debugging information, default=False
+    radial_velocity: bool - if True, fit for radial velocity (non-relativistic). If False, fit for Doppler shift (has relativistic corrections) default=True
+    kwargs: dict - keyword arguments to pass into read_fits_file
+
+    History
+    2024-02-23 - changed from DopplerShift to RadialVelocity when fitting
     '''
 
     if g is None:
@@ -89,8 +111,10 @@ def fit(input_file,spectrum=None,teff_prior=[10000.0,35000.0],logg_prior=[2.0,5.
     convolve1 = InstrumentConvolveGrating.from_grid(g,R=R_prior)
     rot1 = RotationalBroadening.from_grid(g,vrot=np.array([10.0]))
     norm1 = Normalize(spectrum,norm_order)
-
-    model = g | rot1 |DopplerShift(vrad=0)| convolve1 | interp1 | norm1
+    if radial_velocity:
+        model = g | rot1 |RadialVelocity(vrad=0)| convolve1 | interp1 | norm1
+    else:
+        model = g | rot1 |DopplerShift(vrad=0)| convolve1 | interp1 | norm1
 
     # add likelihood parts
     like1 = Chi2Likelihood(spectrum)
