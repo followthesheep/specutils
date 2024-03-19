@@ -29,7 +29,7 @@ def fixgstar(wave,flux,template=None,debug=False,order=3,smooth=1.0,fitRange=Non
     if template is None:
         template = os.path.join(os.path.dirname(__file__), 'data/solarspectrum.hdf5')
 
-    print 'Using template: '+template
+    print('Using template: '+template)
     
     if os.path.isfile(template):
         if os.path.splitext(template)[1] == '.hdf5':
@@ -64,7 +64,7 @@ def fixgstar(wave,flux,template=None,debug=False,order=3,smooth=1.0,fitRange=Non
         delta = np.mean(np.diff(wave))/np.mean(np.diff(solWave))*smooth
         if delta > 1.0:
             if debug:
-                print 'delta: '+str(delta)
+                print('delta: '+str(delta))
             psf = models.Gaussian1D(mean=0.0,stddev=delta,amplitude=1.0)
             psf = psf(np.arange(-np.fix(delta*3.0),np.fix(delta*3)))
             psf = psf/np.sum(psf)
@@ -92,7 +92,7 @@ def fixgstar(wave,flux,template=None,debug=False,order=3,smooth=1.0,fitRange=Non
         shiftVel, shiftPeak, logInt = rvmeasure.rvshift(wave,fluxTemp,solWave,solFluxTemp,debug=False,fitRange=fitRange,nPixFit=nPixFit)
 
         if debug:
-            print 'velocity shift: ',shiftVel
+            print('velocity shift: ',shiftVel)
 
         # shift the solar spectrum. Should use the original spectrum
         # because we need to remove the BB shape from the standard
@@ -123,7 +123,7 @@ def fixgstar(wave,flux,template=None,debug=False,order=3,smooth=1.0,fitRange=Non
             
         return specObj
     else:
-        print 'Template not found: '+template
+        print('Template not found: '+template)
 
 def fixastar(wave,flux,template=None,**kwargs):
     '''
@@ -143,7 +143,7 @@ def test_fixastar():
     good = np.where(flux > 0)[0]
 
     pFit = np.polyfit(wave[good],flux[good],3)
-    print pFit
+    print(pFit)
     clf()
     subplot(2,1,1)
     plot(specObj.dispersion,specObj.flux)
@@ -164,7 +164,7 @@ def test_fixgstar():
     good = np.where(flux > 0)[0]
     
     pFit = np.polyfit(wave[good],flux[good],3)
-    print pFit
+    print(pFit)
     clf()
     subplot(2,1,1)
     plot(specObj.dispersion,specObj.flux)

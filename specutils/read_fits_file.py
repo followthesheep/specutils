@@ -11,7 +11,7 @@ def read_fits_file(filename, flux_units = 'erg / (cm^2 s Angstrom)',
                    desired_wavelength_units = 'micron',
                    wave_range=None,clip_oh = False,clip_pix = 2,
                    clip_lines=False,sigma_clip=False,
-                   clip_replace=False,
+                   clip_replace=False,jwst_nirspec=False,
                    window_len=5,niter=2,sigma=3,stellarlines=None,
                    stellarclip=None,uncertainty=None):
     '''
@@ -25,22 +25,50 @@ def read_fits_file(filename, flux_units = 'erg / (cm^2 s Angstrom)',
     clip_replace - instead of removing the indicies with OH lines,
                    replace them with NaNs (useful for plotting) Default: False
     uncertainty - fits file containing the uncertainties for each flux value
+    jwst_nirspec - read in a fits table of JWST NIRSPEC IFU data (default:False). Will automatically fill in the uncertainty array. 
+    sigma_clip - clip outliers in the spectra using sigma clipping (default: False)
+    sigma - the sigma level to do the clipping (default: 3)
     '''
-    flux = fits.getdata(filename)
+
+    if jwst_nirspec:
+        hdu = fits.open(filename)
+        # take out the units
+        wavelength = hdu[1].data['wavelength']
+        flux = hdu[1].data['flux']
+        wavelength_units = 'micron'
+    else:
+        flux = fits.getdata(filename)
 
 
-    header = fits.getheader(filename)
+        header = fits.getheader(filename)
 
-    start_wavelength = header['CRVAL1'] #http://localhost:8888/notebooks/Metallicity%20Analysis.ipynb#
-    number_of_bins = header['NAXIS1']
-    bin_size = header['CDELT1']
-    end_wavelength = start_wavelength + (number_of_bins - 1) * bin_size
+        start_wavelength = header['CRVAL1'] #http://localhost:8888/notebooks/Metallicity%20Analysis.ipynb#
+        number_of_bins = header['NAXIS1']
+        bin_size = header['CDELT1']
+        end_wavelength = start_wavelength + (number_of_bins - 1) * bin_size
 
-    wavelength = np.linspace(start_wavelength, end_wavelength, number_of_bins)
+        wavelength = np.linspace(start_wavelength, end_wavelength, number_of_bins)
 
+    if uncertainty is not None:
+        rms = fits.getdata(uncertainty)
+
+    if jwst_nirspec:
+        if 'flux_err' in hdu[1].columns.names:
+            uncertainty = True
+            rms = hdu[1].data['flux_err']
+        
     if sigma_clip:
+        # remove the nan pixels first
+        good = np.where(~(np.isnan(flux)))[0]
+        wavelength = wavelength[good]
+        flux = flux[good]
+
+        if uncertainty:
+            rms = rms[good]
+            wavelength, flux,rms = clip_spectrum(wavelength, flux,window_len=window_len,niter=niter,sigma=sigma,rms=rms)
+        else:
         # clip bad pixels
-        wavelength, flux = clip_spectrum(wavelength, flux,window_len=window_len,niter=niter,sigma=sigma)
+            wavelength, flux = clip_spectrum(wavelength, flux,window_len=window_len,niter=niter,sigma=sigma)
 
     # put in units
     flux = flux * u.Unit(flux_units)
@@ -51,9 +79,7 @@ def read_fits_file(filename, flux_units = 'erg / (cm^2 s Angstrom)',
     else:
         pass
 
-    if uncertainty is not None:
-        rms = fits.getdata(uncertainty)
-
+        
     if wave_range is not None:
         good = np.where((wavelength.value > wave_range[0]) & (wavelength.value < wave_range[1]))[0]
         wavelength = wavelength[good]
@@ -130,7 +156,19 @@ def read_fits_file(filename, flux_units = 'erg / (cm^2 s Angstrom)',
     else:
         return Spectrum1D.from_array(wavelength, flux,uncertainty = rms)
 
-
+def test_read_jwst_nirspec_fits():
+    '''
+    Test reading and clipping JWST NIRSPEC IFU spectra
+    '''
+    #filename = '/data3/jwst/dr1/nirspec/gc_central/01_individual_spectra/2023_03_28_dl2023_03_29_v8/S0-2_2023_03_28_emsm_circle_median_std.fits'
+    filename ='/home/imizrahi/jwst/nirspec/gc_central/2023_03_28_dl20230802_v2/jw03_nrs1_emsm/2023_10_02/S4-235_2023_03_28_jw03_nrs1_emsm_annulus.fits'
+    #s = read_fits_file(filename,jwst_nirspec=True,sigma_clip=True,niter=10,sigma=3)
+    s = read_fits_file(filename,jwst_nirspec=True,sigma_clip=True,niter=4)
+    plt.clf()
+    plt.plot(s.wavelength,s.flux)
+    plt.xlabel('Wavelength (micron)')
+    plt.ylabel('Flux')
+    
 
 def read_txt_file(filename, flux_units = 'erg / (cm^2 s Angstrom)',
                    wavelength_units = 'Angstrom',
@@ -492,7 +530,7 @@ def read_nirspec_dat(datfile,flux_units = 'erg / (cm^2 s Angstrom)', wavelength_
 
     return Spectrum1D.from_array(wavelength, flux.value, dispersion_unit = wavelength.unit, unit = flux.unit)
 
-def clip_spectrum(wave,flux,window_len=5,niter=3,sigma=3):
+def clip_spectrum(wave,flux,window_len=5,niter=3,sigma=3,rms=None):
     w = np.hanning(window_len)
 
     x = np.copy(flux)
@@ -507,11 +545,16 @@ def clip_spectrum(wave,flux,window_len=5,niter=3,sigma=3):
         smoothed = smoothed[window_len-1:-window_len+1]
         smoothed = smoothed/np.median(smoothed)
         diff = smoothed-x
-        good = np.where(np.abs(diff) < 3*np.std(diff))[0]
+        good = np.where(np.abs(diff) < sigma*np.std(diff))[0]
         x = x[good]
         wavelength = wavelength[good]
+        if rms is not None:
+            rms =rms[good]
 
-    return wavelength,x*mx
+    if rms is not None:
+        return wavelength, x*mx, rms
+    else:
+        return wavelength,x*mx
 
 def test_clip_spectrum():
     starfile = '../spectra/tests/E7_1_018.fits'
