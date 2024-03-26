@@ -1,10 +1,13 @@
 import numpy as np
+import os
+import datetime
     
 def update_starkit_db(name,date,ddate,mjd,h5file,snr=None,
                       original_location=None,
                       spectrum_file=None,
                       starkit_stacked_spectra=False,
-                      vlsr=None,passwd=None,vsys=0.0,source=None,vhelio=None):
+                      starkit_nonrel=False,
+                      vlsr=None,passwd=None,vsys=0.0,source=None,vhelio=None,quality=None):
     '''
     update the starkit database with the info from the hdf5 file and the star
 
@@ -32,11 +35,15 @@ def update_starkit_db(name,date,ddate,mjd,h5file,snr=None,
     '''
     try:
         import MySQLdb as mdb
+    # try:
+        # import mysql as mdb
     except:
-        import mysql as mdb
+        import pymysql as mdb
 
     if starkit_stacked_spectra:
         table_name = 'starkit_stacked_spectra'
+    if starkit_nonrel:
+        table_name = 'starkit_nonrel'
     else:
         table_name = 'starkit'
 
@@ -75,7 +82,7 @@ def update_starkit_db(name,date,ddate,mjd,h5file,snr=None,
         else:
             values = values + [temp[5][1]+vhelio,temp[5][0]+vhelio]
 
-        values = values + [vsys,snr,source]
+        values = values + [vsys,snr,source,quality]
         
         con = mdb.connect(host='galaxy1.astro.ucla.edu',user='dbwrite',passwd=passwd,db='gcg')
         cur = con.cursor()
@@ -89,8 +96,8 @@ def update_starkit_db(name,date,ddate,mjd,h5file,snr=None,
                     'alpha_peak,alpha,alpha_err,alpha_err_upper,alpha_err_lower,'+\
                     'vrot_peak,vrot,vrot_err,vrot_err_upper,vrot_err_lower,'+\
                     'r_peak,r,r_err,r_err_upper,r_err_lower,'+\
-                    'original_location,file,chains,edit,vlsr,vlsr_peak,vhelio,vhelio_peak,vsys_err,snr,source)'+\
-                    ' VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
+                    'original_location,file,chains,edit,vlsr,vlsr_peak,vhelio,vhelio_peak,vsys_err,snr,source,quality)'+\
+                    ' VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
                     
 #         sql_query = 'REPLACE INTO starkit (name,date,ddate,mjd,'+\
 #                     'teff_peak,teff,teff_err,teff_err_upper,teff_err_lower,'+\
