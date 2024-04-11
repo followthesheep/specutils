@@ -7,8 +7,7 @@ def update_starkit_db(name,date,ddate,mjd,h5file,snr=None,
                       spectrum_file=None,
                       starkit_stacked_spectra=False,
                       starkit_nonrel=False,
-                      vlsr=None,passwd=None,vsys=0.0,source=None,vhelio=None,quality=None,
-                      add_err = None):
+                      vlsr=None,passwd=None,vsys=0.0,source=None,vhelio=None,quality=None):
     '''
     update the starkit database with the info from the hdf5 file and the star
 
@@ -72,10 +71,10 @@ def update_starkit_db(name,date,ddate,mjd,h5file,snr=None,
                     temp[7] + [original_location,spectrum_file,h5file,str(datetime.datetime.today())]
            # print(values)
         else:
-           values = [name,date,ddate,mjd]+ temp[0] + temp[1]+ temp[5] + temp[2] + temp[3] + temp[4] + temp[6] + \
-                 [original_location,spectrum_file,h5file,str(datetime.datetime.today())]
            # values = [name,date,ddate,mjd]+ temp[0] + temp[1]+ temp[5] + temp[2] + temp[3] + temp[4] + temp[6] + \
-                    # [None,None,None,None,None] + [original_location,spectrum_file,h5file,str(datetime.datetime.today())]
+                 # [original_location,spectrum_file,h5file,str(datetime.datetime.today())]
+           values = [name,date,ddate,mjd]+ temp[0] + temp[1]+ temp[5] + temp[2] + temp[3] + temp[4] + temp[6] + \
+                    [None,None,None,None,None] + [original_location,spectrum_file,h5file,str(datetime.datetime.today())]
         if vlsr is None:
             values = values + [None,None]
         else:
@@ -90,9 +89,8 @@ def update_starkit_db(name,date,ddate,mjd,h5file,snr=None,
         
         con = mdb.connect(host='galaxy1.astro.ucla.edu',user='dbwrite',passwd=passwd,db='gcg')
         cur = con.cursor()
-        
-        if 'add_err_6' in m.keys():
-            sql_query = 'REPLACE INTO '+table_name+' (name,date,ddate,mjd,'+\
+
+        sql_query = 'REPLACE INTO '+table_name+' (name,date,ddate,mjd,'+\
                     'teff_peak,teff,teff_err,teff_err_upper,teff_err_lower,'+\
                     'logg_peak,logg,logg_err,logg_err_upper,logg_err_lower,'+\
                     'vz_peak,vz,vz_err,vz_err_upper,vz_err_lower,'+\
@@ -103,17 +101,30 @@ def update_starkit_db(name,date,ddate,mjd,h5file,snr=None,
                     'add_err_peak,add_err,add_err_err,add_err_upper,add_err_lower,'+\
                     'original_location,file,chains,edit,vlsr,vlsr_peak,vhelio,vhelio_peak,vsys_err,snr,source,quality)'+\
                     ' VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
-        else:
-            sql_query = 'REPLACE INTO '+table_name+' (name,date,ddate,mjd,'+\
-                    'teff_peak,teff,teff_err,teff_err_upper,teff_err_lower,'+\
-                    'logg_peak,logg,logg_err,logg_err_upper,logg_err_lower,'+\
-                    'vz_peak,vz,vz_err,vz_err_upper,vz_err_lower,'+\
-                    'mh_peak,mh,mh_err,mh_err_upper,mh_err_lower,'+\
-                    'alpha_peak,alpha,alpha_err,alpha_err_upper,alpha_err_lower,'+\
-                    'vrot_peak,vrot,vrot_err,vrot_err_upper,vrot_err_lower,'+\
-                    'r_peak,r,r_err,r_err_upper,r_err_lower,'+\
-                    'original_location,file,chains,edit,vlsr,vlsr_peak,vhelio,vhelio_peak,vsys_err,snr,source,quality)'+\
-                    ' VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
+        
+        # if 'add_err_6' in m.keys():
+        #     sql_query = 'REPLACE INTO '+table_name+' (name,date,ddate,mjd,'+\
+        #             'teff_peak,teff,teff_err,teff_err_upper,teff_err_lower,'+\
+        #             'logg_peak,logg,logg_err,logg_err_upper,logg_err_lower,'+\
+        #             'vz_peak,vz,vz_err,vz_err_upper,vz_err_lower,'+\
+        #             'mh_peak,mh,mh_err,mh_err_upper,mh_err_lower,'+\
+        #             'alpha_peak,alpha,alpha_err,alpha_err_upper,alpha_err_lower,'+\
+        #             'vrot_peak,vrot,vrot_err,vrot_err_upper,vrot_err_lower,'+\
+        #             'r_peak,r,r_err,r_err_upper,r_err_lower,'+\
+        #             'add_err_peak,add_err,add_err_err,add_err_upper,add_err_lower,'+\
+        #             'original_location,file,chains,edit,vlsr,vlsr_peak,vhelio,vhelio_peak,vsys_err,snr,source,quality)'+\
+        #             ' VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
+        # else:
+        #     sql_query = 'REPLACE INTO '+table_name+' (name,date,ddate,mjd,'+\
+        #             'teff_peak,teff,teff_err,teff_err_upper,teff_err_lower,'+\
+        #             'logg_peak,logg,logg_err,logg_err_upper,logg_err_lower,'+\
+        #             'vz_peak,vz,vz_err,vz_err_upper,vz_err_lower,'+\
+        #             'mh_peak,mh,mh_err,mh_err_upper,mh_err_lower,'+\
+        #             'alpha_peak,alpha,alpha_err,alpha_err_upper,alpha_err_lower,'+\
+        #             'vrot_peak,vrot,vrot_err,vrot_err_upper,vrot_err_lower,'+\
+        #             'r_peak,r,r_err,r_err_upper,r_err_lower,'+\
+        #             'original_location,file,chains,edit,vlsr,vlsr_peak,vhelio,vhelio_peak,vsys_err,snr,source,quality)'+\
+        #             ' VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
                     
 #         sql_query = 'REPLACE INTO starkit (name,date,ddate,mjd,'+\
 #                     'teff_peak,teff,teff_err,teff_err_upper,teff_err_lower,'+\
