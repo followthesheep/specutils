@@ -3,6 +3,7 @@ import pandas as pd
 import pylab as plt
 import matplotlib
 from astropy import units as u
+from starkit.fitkit import likelihoods
 from starkit.fitkit.likelihoods import SpectralChi2Likelihood as Chi2Likelihood, SpectralL1Likelihood
 from starkit.gridkit import load_grid
 from starkit.fitkit.multinest.base import MultiNest, MultiNestResult
@@ -120,7 +121,7 @@ def fit(input_file,spectrum=None,teff_prior=[10000.0,35000.0],logg_prior=[2.0,5.
 
     # add likelihood parts
     if add_err == True:
-        like1 = likelihoods.SpectralL1LikelihoodAddErr(spectrum)
+        like1 = likelihoods.SpectralChi2LikelihoodAddErr(spectrum)
     else:
         like1 = Chi2Likelihood(spectrum)
     #like1_l1 = SpectralL1Likelihood(spectrum)
@@ -131,6 +132,7 @@ def fit(input_file,spectrum=None,teff_prior=[10000.0,35000.0],logg_prior=[2.0,5.
     ##run the fit
     if add_err == True:
         fitobj = MultiNest(fit_model, [teff_prior1, logg_prior1, mh_prior1, alpha_prior1, vrot_prior1, vrad_prior1,R_prior1,add_err_prior1])
+        print('Testing - Running additive error')
     else:
         fitobj = MultiNest(fit_model, [teff_prior1, logg_prior1, mh_prior1, alpha_prior1, vrot_prior1, vrad_prior1,R_prior1])
     fitobj.run(verbose=debug)
