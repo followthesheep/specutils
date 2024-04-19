@@ -18,6 +18,9 @@ import os,scipy
 from specutils import  Spectrum1D,rvmeasure
 import shutil, logging, datetime
 
+import inspect
+import yaml
+
 def get_grid(gridfile='/u/tdo/research/metallicity/grids/bosz_grid_high_temp.h5'):
     '''
     Return a grid object so that the grid only needs to be loaded once. 
@@ -62,6 +65,7 @@ def fit(input_file,spectrum=None,teff_prior=[10000.0,35000.0],logg_prior=[2.0,5.
 
     History
     2024-02-23 - changed from DopplerShift to RadialVelocity when fitting
+    2024-04-13 - added capability to fit for additive error
     '''
 
     if g is None:
@@ -87,6 +91,28 @@ def fit(input_file,spectrum=None,teff_prior=[10000.0,35000.0],logg_prior=[2.0,5.
     plot_file = file_part+'.pdf'
     corner_file = file_part+'_corner.pdf'
     model_file = file_part+'_model.txt' # best fit model
+    yaml_file = file_part+'_fit_input.yaml' # YAML file of function input
+
+    ## Save a yaml file with the inputs
+    frame = inspect.currentframe()
+    print(inspect.getargvalues(frame))
+    args, varargs, keywords, locals = inspect.getargvalues(frame)
+    print('args are')
+    print(args)
+    print(len(args))
+    print('varargs are')
+    print(varargs)
+    print('keywords are')
+    print(keywords)
+    print('locals are')
+    print(locals)
+    print(len(locals))
+    input_dict = {arg: locals[arg] for arg in args}
+    print('input dictionary')
+    print(input_dict)
+    ##output to YAML file
+    with open(yaml_file, "w") as yaml_file:
+        yaml.dump(input_dict, yaml_file)  # indent for readability
     
     print('copying file from %s to %s' %(input_file,spectrum_file))
     shutil.copyfile(input_file,spectrum_file)
