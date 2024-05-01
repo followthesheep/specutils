@@ -95,20 +95,21 @@ def fit(input_file,spectrum=None,teff_prior=[10000.0,35000.0],logg_prior=[2.0,5.
 
     ## Save a yaml file with the inputs
     frame = inspect.currentframe()
-    print(inspect.getargvalues(frame))
+    # print(inspect.getargvalues(frame))
     args, varargs, keywords, locals = inspect.getargvalues(frame)
-    print('args are')
-    print(args)
-    print(len(args))
-    print('varargs are')
-    print(varargs)
-    print('keywords are')
-    print(keywords)
-    print('locals are')
-    print(locals)
-    print(len(locals))
+    # print('args are')
+    # print(args)
+    # print('varargs are')
+    # print(varargs)
+    # print('keywords are')
+    # print(keywords)
+    # print('locals are')
+    # print(locals)
     input_dict = {arg: locals[arg] for arg in args}
-    print('input dictionary')
+    ##Remove specturm and grid keys to prevent bug
+    del input_dict['spectrum']
+    del input_dict['g']
+    print('Input dictionary to be saved')
     print(input_dict)
     ##output to YAML file
     with open(yaml_file, "w") as yaml_file:
