@@ -3,6 +3,7 @@ import pandas as pd
 import pylab as plt
 import matplotlib
 from astropy import units as u
+from starkit.fitkit import likelihoods
 from starkit.fitkit.likelihoods import SpectralChi2Likelihood as Chi2Likelihood, SpectralL1Likelihood
 from starkit.gridkit import load_grid
 from starkit.fitkit.multinest.base import MultiNest, MultiNestResult
@@ -16,6 +17,9 @@ import numpy as np
 import os,scipy
 from specutils import  Spectrum1D,rvmeasure
 import shutil, logging, datetime
+
+import inspect
+import yaml
 
 def get_grid(gridfile='/u/tdo/research/metallicity/grids/bosz_grid_high_temp.h5'):
     '''
@@ -33,7 +37,7 @@ def save_spectrum(wave,flux,filename):
 def fit(input_file,spectrum=None,teff_prior=[10000.0,35000.0],logg_prior=[2.0,5.0],mh_prior = [-1.0,0.8],
        alpha_prior = [-0.25,0.5],vrot_prior=[0,350.0],vrad_prior=[-5000,5000],R_prior=4000.0,
         wave_range=None,outdir='./',snr=30.0,norm_order=2,g=None,molecfit=False,wavelength_units='micron',
-        debug=False,radial_velocity=True,**kwargs):
+        debug=False,radial_velocity=True,add_err=False,add_err_prior=[0,0.5],**kwargs):
     '''
     Given a fits file, read in and fit the spectrum using a grid
     
@@ -56,10 +60,12 @@ def fit(input_file,spectrum=None,teff_prior=[10000.0,35000.0],logg_prior=[2.0,5.
     wavelength_units: str - units of the wavelength, default='micron'
     debug: bool - if True, print out debugging information, default=False
     radial_velocity: bool - if True, fit for radial velocity (non-relativistic). If False, fit for Doppler shift (has relativistic corrections) default=True
+    add_err: fit for additive error on the flux of spectrum, default=False
     kwargs: dict - keyword arguments to pass into read_fits_file
 
     History
     2024-02-23 - changed from DopplerShift to RadialVelocity when fitting
+    2024-04-13 - added capability to fit for additive error
     '''
 
     if g is None:
@@ -73,6 +79,7 @@ def fit(input_file,spectrum=None,teff_prior=[10000.0,35000.0],logg_prior=[2.0,5.
     vrad_prior1 = priors.UniformPrior(-5000,5000)
     #R_prior1 = priors.UniformPrior(1500,10000)
     R_prior1 = priors.FixedPrior(R_prior)
+    add_err_prior1 = priors.UniformPrior(add_err_prior[0],add_err_prior[1])
 
     # wavelength range for the fit
     #wave_range = None
@@ -84,6 +91,28 @@ def fit(input_file,spectrum=None,teff_prior=[10000.0,35000.0],logg_prior=[2.0,5.
     plot_file = file_part+'.pdf'
     corner_file = file_part+'_corner.pdf'
     model_file = file_part+'_model.txt' # best fit model
+    yaml_file = file_part+'_fit_input.yaml' # YAML file of function input
+
+    ## Save a yaml file with the inputs
+    frame = inspect.currentframe()
+    print(inspect.getargvalues(frame))
+    args, varargs, keywords, locals = inspect.getargvalues(frame)
+    print('args are')
+    print(args)
+    print(len(args))
+    print('varargs are')
+    print(varargs)
+    print('keywords are')
+    print(keywords)
+    print('locals are')
+    print(locals)
+    print(len(locals))
+    input_dict = {arg: locals[arg] for arg in args}
+    print('input dictionary')
+    print(input_dict)
+    ##output to YAML file
+    with open(yaml_file, "w") as yaml_file:
+        yaml.dump(input_dict, yaml_file)  # indent for readability
     
     print('copying file from %s to %s' %(input_file,spectrum_file))
     shutil.copyfile(input_file,spectrum_file)
@@ -117,13 +146,21 @@ def fit(input_file,spectrum=None,teff_prior=[10000.0,35000.0],logg_prior=[2.0,5.
         model = g | rot1 |DopplerShift(vrad=0)| convolve1 | interp1 | norm1
 
     # add likelihood parts
-    like1 = Chi2Likelihood(spectrum)
+    if add_err == True:
+        like1 = likelihoods.SpectralChi2LikelihoodAddErr(spectrum)
+    else:
+        like1 = Chi2Likelihood(spectrum)
     #like1_l1 = SpectralL1Likelihood(spectrum)
 
     
     fit_model = model | like1
     
-    fitobj = MultiNest(fit_model, [teff_prior1, logg_prior1, mh_prior1, alpha_prior1, vrot_prior1, vrad_prior1,R_prior1])
+    ##run the fit
+    if add_err == True:
+        fitobj = MultiNest(fit_model, [teff_prior1, logg_prior1, mh_prior1, alpha_prior1, vrot_prior1, vrad_prior1,R_prior1,add_err_prior1])
+        print('Testing - Running additive error')
+    else:
+        fitobj = MultiNest(fit_model, [teff_prior1, logg_prior1, mh_prior1, alpha_prior1, vrot_prior1, vrad_prior1,R_prior1])
     fitobj.run(verbose=debug)
 
     result = fitobj.result
@@ -157,7 +194,10 @@ def fit(input_file,spectrum=None,teff_prior=[10000.0,35000.0],logg_prior=[2.0,5.
     plt.legend()
     plt.savefig(plot_file)
 
-    result.plot_triangle(parameters=['teff_0','logg_0','mh_0','alpha_0','vrot_1','vrad_2'])
+    if add_err==True:
+        result.plot_triangle(parameters=['teff_0','logg_0','mh_0','alpha_0','vrot_1','vrad_2','add_err_6'])
+    else:
+        result.plot_triangle(parameters=['teff_0','logg_0','mh_0','alpha_0','vrot_1','vrad_2'])
     logging.info('saving corner plot to: '+corner_file)
     plt.savefig(corner_file)    
     
