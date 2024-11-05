@@ -67,7 +67,7 @@ def rvshift(wave1, spec1, wave2, spec2, r1 = None, r2 = None, debug = False,
 
     Returns:
     ---------
-    Return an array of [velocity, pixel shift, logShift]
+    Return an array of [velocity, pixel shift, logShift, max obs. corr value]
     """
 
     # make a copy of the input spectra
@@ -197,7 +197,7 @@ def rvshift(wave1, spec1, wave2, spec2, r1 = None, r2 = None, debug = False,
         pl.plot(lags[peakInd-nPixFit:peakInd+nPixFit+1],peak_val,'r')
         pl.xlim(lagRange[0],lagRange[1])
         pl.tight_layout()
-    return np.array([shiftPeakVel,shiftPeak,logInt])
+    return np.array([shiftPeakVel,shiftPeak,logInt,np.max(corr)])
 
 def shiftSpec(wave,flux,vel):
     # takes a the wavelengths and spectra and shift by some velocity value. Then resample back into the same grid.
