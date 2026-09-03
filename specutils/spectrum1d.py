@@ -16,13 +16,17 @@ class Spectrum1D(object):
         -------
             : Spectrum1D object
         """
+        # u.Quantity attaches the unit to a bare array, but converts (rather
+        # than multiplies) if the input already carries a unit. This avoids
+        # e.g. Angstrom*Angstrom -> Angstrom2 when callers pass a Quantity
+        # along with dispersion_unit=wavelength.unit.
         if unit is not None:
-            out_flux = flux*u.Unit(unit)
+            out_flux = u.Quantity(flux, u.Unit(unit))
         else:
             out_flux = flux
-            
+
         if dispersion_unit is not None:
-            out_wave = wavelength*u.Unit(dispersion_unit)
+            out_wave = u.Quantity(wavelength, u.Unit(dispersion_unit))
         else:
             out_wave = wavelength
             

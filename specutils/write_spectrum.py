@@ -27,7 +27,7 @@ def write_txt(wavelength,flux,filename,uncertainty=None,comments=None):
     else:
         output.write('#wavelength flux uncertainty\n')
 
-    for i in xrange(len(wavelength)):
+    for i in np.arange(len(wavelength)):
         if uncertainty is None:
             output.write('%f\t%f\n' % (wavelength[i],flux[i]))
         else:
